@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Replyvora — Reply to email faster</title>
+<meta name="description" content="Replyvora reads the email you're already looking at and drafts a reply on the spot, right inside Gmail. Runs entirely on your device.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500;1,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0b0f1d;
+    --bg-deep-2:#141a2e;
+    --paper:#f5f7fb;
+    --card:#ffffff;
+    --ink:#111827;
+    --ink-soft:#374151;
+    --muted:#94a3b8;
+    --muted-ink:#667085;
+    --line:#e5e7eb;
+    --line-dark:#2a3252;
+    --teal:#5eead4;
+    --teal-deep:#22c1a3;
+    --danger:#dc2626;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  .display{font-family:'Fraunces',Georgia,serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 28px;}
+
+  /* ---------- NAV ---------- */
+  nav.top{
+    position:sticky; top:0; z-index:40;
+    background:rgba(11,15,29,0.86); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line-dark);
+  }
+  nav.top .wrap{display:flex; align-items:center; justify-content:space-between; height:64px;}
+  .brand{display:flex; align-items:center; gap:10px; color:#fff; font-weight:700; font-size:17px; letter-spacing:-0.2px;}
+  .brand .mark{width:28px; height:28px; border-radius:8px; background:linear-gradient(145deg,#232c45,#0b0f1d); display:flex; align-items:center; justify-content:center; position:relative; flex:none;}
+  .brand .mark svg{width:14px; height:14px;}
+  .nav-links{display:flex; gap:28px; font-size:14px; color:var(--muted);}
+  .nav-links a{text-decoration:none; transition:color .15s ease;}
+  .nav-links a:hover{color:#fff;}
+  .btn{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:11px 20px; border-radius:10px; font-weight:600; font-size:14px;
+    text-decoration:none; border:1px solid transparent; cursor:pointer;
+  }
+  .btn-primary{background:linear-gradient(135deg,var(--teal),var(--teal-deep)); color:#06231d;}
+  .btn-primary:hover{filter:brightness(1.05);}
+  .btn-ghost{background:transparent; border-color:var(--line-dark); color:#fff;}
+  .btn-ghost:hover{border-color:var(--teal);}
+
+  /* ---------- HERO ---------- */
+  header.hero{
+    background:
+      radial-gradient(680px 420px at 82% -10%, rgba(94,234,212,0.14), transparent 60%),
+      linear-gradient(180deg,var(--bg-deep) 0%, var(--bg-deep-2) 100%);
+    padding:96px 0 120px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero-grid{
+    display:grid; grid-template-columns:1.05fr 0.95fr; gap:56px; align-items:center;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--teal); margin-bottom:20px; display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:""; width:7px; height:7px; border-radius:50%; background:var(--teal); box-shadow:0 0 0 4px rgba(94,234,212,0.15);}
+  h1.hero-title{
+    font-size:52px; line-height:1.06; letter-spacing:-0.5px; color:#fff; margin:0 0 22px;
+    font-weight:600;
+  }
+  h1.hero-title em{font-style:italic; color:var(--teal); font-weight:500;}
+  .hero-sub{font-size:17px; line-height:1.65; color:var(--muted); max-width:460px; margin:0 0 34px;}
+  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:28px;}
+  .hero-note{font-size:13px; color:#5b6884;}
+  .hero-note strong{color:#cbd5e1;}
+
+  /* signature mock */
+  .stage{position:relative; height:460px;}
+  .email-card{
+    position:absolute; left:0; top:18px; width:78%;
+    background:var(--card); border-radius:16px; padding:26px 26px 24px;
+    box-shadow:0 30px 60px rgba(0,0,0,0.35);
+  }
+  .email-card .subj{font-weight:700; font-size:16px; color:var(--ink); margin-bottom:14px;}
+  .email-meta{display:flex; align-items:center; gap:10px; margin-bottom:16px;}
+  .avatar{width:32px; height:32px; border-radius:50%; background:#c7d2fe; color:#3730a3; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center;}
+  .email-meta .who{font-size:13px; font-weight:700; color:var(--ink);}
+  .email-meta .addr{font-size:11px; color:var(--muted-ink);}
+  .email-card p{font-size:13.5px; line-height:1.7; color:var(--ink-soft); margin:0 0 10px;}
+
+  .rv-panel{
+    position:absolute; right:0; bottom:0; width:70%;
+    background:#fff; border:1px solid #eceef2; border-radius:16px;
+    box-shadow:0 26px 54px rgba(0,0,0,0.4);
+    padding:18px;
+  }
+  .rv-head{display:flex; align-items:center; justify-content:between; justify-content:space-between; margin-bottom:14px;}
+  .rv-head strong{font-size:15px; color:var(--ink); letter-spacing:-0.2px;}
+  .rv-dot{font-size:10px; font-weight:700; color:#16a34a;}
+  .rv-badges{display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;}
+  .rv-badges span{font-size:10px; font-weight:700; padding:4px 8px; border-radius:999px; background:#f3f4f6; color:#374151;}
+  .rv-badges span.urgent{background:#fef2f2; color:var(--danger);}
+  .rv-label{font-size:9px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#9ca3af; margin-bottom:6px;}
+  .rv-draft{
+    font-size:12.5px; line-height:1.6; color:#111827; background:#fff; border:1px solid #d1d5db;
+    border-radius:10px; padding:10px; min-height:74px;
+  }
+  .rv-draft .cursor{display:inline-block; width:2px; height:13px; background:#111827; margin-left:1px; vertical-align:-2px; animation:blink 1s step-start infinite;}
+  @keyframes blink{50%{opacity:0;}}
+  .rv-cta{margin-top:10px; background:#111827; color:#fff; font-size:12px; font-weight:600; text-align:center; padding:9px; border-radius:8px;}
+
+  @media (prefers-reduced-motion: reduce){ .cursor{animation:none;} }
+
+  /* ---------- SECTION SHARED ---------- */
+  section{padding:88px 0;}
+  .kicker{font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--teal-deep); margin-bottom:14px;}
+  h2.section-title{font-size:32px; letter-spacing:-0.4px; margin:0 0 14px; font-weight:600;}
+  .section-sub{color:var(--muted-ink); font-size:16px; max-width:560px; line-height:1.6; margin:0 0 48px;}
+
+  /* how it works */
+  .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:24px;}
+  .step{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:26px;}
+  .step .num{font-family:'Fraunces',serif; font-style:italic; font-size:34px; color:var(--teal-deep); margin-bottom:14px; display:block;}
+  .step h3{font-size:16px; margin:0 0 8px;}
+  .step p{font-size:14px; color:var(--muted-ink); line-height:1.6; margin:0;}
+
+  /* trust row */
+  .trust-section{background:var(--bg-deep); color:#fff;}
+  .trust-section .kicker{color:var(--teal);}
+  .trust-section .section-sub{color:var(--muted);}
+  .trust-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line-dark); border:1px solid var(--line-dark); border-radius:16px; overflow:hidden;}
+  .trust-item{background:var(--bg-deep-2); padding:28px 24px;}
+  .trust-item h3{font-size:15px; margin:0 0 8px; color:#fff;}
+  .trust-item p{font-size:13.5px; color:var(--muted); line-height:1.6; margin:0;}
+
+  /* recommended tools */
+  .tools-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:16px;}
+  .tool-card{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 22px;
+    text-decoration:none; color:inherit; transition:border-color .15s ease, transform .15s ease;
+  }
+  .tool-card:hover{border-color:var(--teal-deep); transform:translateY(-2px);}
+  .tool-card h3{font-size:15px; margin:0 0 4px;}
+  .tool-card p{font-size:13px; color:var(--muted-ink); margin:0;}
+  .tool-arrow{font-size:18px; color:var(--teal-deep); flex:none;}
+  .disclosure{font-size:12.5px; color:var(--muted-ink); margin-top:20px; line-height:1.6;}
+
+  /* privacy */
+  .privacy-section{background:var(--card); border-top:1px solid var(--line);}
+  .privacy-section h2{font-size:26px; margin:0 0 6px;}
+  .updated{font-size:13px; color:var(--muted-ink); margin-bottom:36px;}
+  .privacy-body h3{font-size:16px; margin:30px 0 10px;}
+  .privacy-body p, .privacy-body li{font-size:14.5px; line-height:1.75; color:var(--ink-soft);}
+  .privacy-body ul{padding-left:20px;}
+
+  footer{background:var(--bg-deep); color:var(--muted); padding:40px 0;}
+  footer .wrap{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;}
+  footer .flinks{display:flex; gap:22px; font-size:13.5px;}
+  footer .flinks a{text-decoration:none; color:var(--muted);}
+  footer .flinks a:hover{color:#fff;}
+  footer .fbrand{font-size:13.5px; color:#5b6884;}
+
+  @media (max-width: 860px){
+    .hero-grid{grid-template-columns:1fr;}
+    .stage{height:380px; margin-top:20px;}
+    h1.hero-title{font-size:38px;}
+    .steps, .trust-grid, .tools-grid{grid-template-columns:1fr;}
+    nav .nav-links{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="wrap">
+    <div class="brand">
+      <span class="mark">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="5" width="20" height="14" rx="2" stroke="#5eead4" stroke-width="2"/>
+          <path d="M3 6l9 7 9-7" stroke="#5eead4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      Replyvora
+    </div>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#trust">Privacy</a>
+      <a href="#tools">Recommended tools</a>
+    </div>
+    <a class="btn btn-primary" href="#" id="cws-link-top">Add to Chrome</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">Chrome extension for Gmail</div>
+      <h1 class="hero-title">Stop staring at the<br><em>blank reply</em> box.</h1>
+      <p class="hero-sub">Replyvora reads the email you already have open, picks up on tone and urgency, and drafts a reply right there in Gmail — so you just review, tweak, and send.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="#" id="cws-link-hero">Add to Chrome — it's free</a>
+        <a class="btn btn-ghost" href="#how">See how it works</a>
+      </div>
+      <p class="hero-note"><strong>Runs on your device.</strong> No email content is ever sent to a server.</p>
+    </div>
+
+    <div class="stage" aria-hidden="true">
+      <div class="email-card">
+        <div class="subj">Project timeline needs to move up</div>
+        <div class="email-meta">
+          <div class="avatar">JM</div>
+          <div>
+            <div class="who">Jordan Miles</div>
+            <div class="addr">jordan.miles@example.com</div>
+          </div>
+        </div>
+        <p>The client just asked if we can move the delivery date up by a week. Can you let me know by tomorrow whether the team can make that work?</p>
+      </div>
+
+      <div class="rv-panel">
+        <div class="rv-head">
+          <strong>Replyvora</strong>
+          <span class="rv-dot">● Active</span>
+        </div>
+        <div class="rv-badges">
+          <span class="urgent">Time-sensitive</span>
+          <span>Requires decision</span>
+        </div>
+        <div class="rv-label">Suggested reply</div>
+        <div class="rv-draft" id="typewriter"></div>
+        <div class="rv-cta">Insert reply</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="how">
+  <div class="wrap">
+    <div class="kicker">How it works</div>
+    <h2 class="section-title">Three steps, no setup</h2>
+    <p class="section-sub">No account, no configuration screens. Install it and it's ready the next time you open an email.</p>
+    <div class="steps">
+      <div class="step">
+        <span class="num">01</span>
+        <h3>Open an email</h3>
+        <p>Replyvora appears automatically next to any email you have open in Gmail.</p>
+      </div>
+      <div class="step">
+        <span class="num">02</span>
+        <h3>It reads the context</h3>
+        <p>It picks up on tone, urgency, and what's actually being asked — right there on your screen.</p>
+      </div>
+      <div class="step">
+        <span class="num">03</span>
+        <h3>Review and send</h3>
+        <p>A draft reply is inserted for you to adjust. You always stay in control of what goes out.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="trust" class="trust-section">
+  <div class="wrap">
+    <div class="kicker">Why it's safe to install</div>
+    <h2 class="section-title">Nothing leaves your browser</h2>
+    <p class="section-sub">Replyvora was built to do its job without needing your data anywhere but your own device.</p>
+    <div class="trust-grid">
+      <div class="trust-item">
+        <h3>No servers involved</h3>
+        <p>Every draft is generated locally, inside your browser. Nothing is uploaded anywhere.</p>
+      </div>
+      <div class="trust-item">
+        <h3>Nothing is stored</h3>
+        <p>Email content is only read while the tab is open — it isn't saved once you move on.</p>
+      </div>
+      <div class="trust-item">
+        <h3>Free to use</h3>
+        <p>No account, no trial countdown. Install it and start using it right away.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="tools">
+  <div class="wrap">
+    <div class="kicker">Beyond Replyvora</div>
+    <h2 class="section-title">Tools we actually recommend</h2>
+    <p class="section-sub">A short list of things that pair well with a faster inbox. We only list tools we'd suggest to a friend.</p>
+    <div class="tools-grid">
+      <a class="tool-card" href="#" id="tool-grammarly" target="_blank" rel="noopener sponsored">
+        <div>
+          <h3>Grammarly</h3>
+          <p>Catches grammar and tone issues before you hit send.</p>
+        </div>
+        <span class="tool-arrow">↗</span>
+      </a>
+      <a class="tool-card" href="#" id="tool-calendly" target="_blank" rel="noopener sponsored">
+        <div>
+          <h3>Calendly</h3>
+          <p>Turns "let's find a time" replies into one link.</p>
+        </div>
+        <span class="tool-arrow">↗</span>
+      </a>
+    </div>
+    <p class="disclosure">Some links on this page are affiliate links. If you sign up through one, we may earn a small commission at no extra cost to you. We only recommend tools we believe are genuinely useful for people who spend a lot of time on email.</p>
+  </div>
+</section>
+
+<section class="privacy-section" id="privacy">
+  <div class="wrap">
+    <div class="kicker">Legal</div>
+    <h2>Privacy policy</h2>
+    <p class="updated">Last updated: <span id="privacy-date">[DATE]</span></p>
+
+    <div class="privacy-body">
+      <p>Replyvora ("the extension") is a Chrome extension that helps you read and reply to emails inside Gmail (<span class="mono">https://mail.google.com/*</span>).</p>
+
+      <h3>What Replyvora accesses</h3>
+      <ul>
+        <li><strong>Email content you have open in Gmail.</strong> When you open an email, Replyvora reads the visible sender, subject, and body of that message directly from the Gmail page, so it can classify the message and draft a suggested reply.</li>
+        <li><strong>Your extension settings</strong> (enabled/disabled, reply tone, auto-analyze), stored locally using Chrome's <span class="mono">storage</span> API.</li>
+      </ul>
+
+      <h3>What Replyvora does not do</h3>
+      <ul>
+        <li>It does not send your emails, drafts, or any other personal data to any external server — all analysis and draft generation happen entirely on your device.</li>
+        <li>It does not use any remote AI/LLM API. Suggested replies are generated locally using keyword-based rules.</li>
+        <li>It does not sell, rent, or share your data with third parties, and does not use your data for advertising.</li>
+        <li>It does not track you across other websites.</li>
+      </ul>
+
+      <h3>Data storage and retention</h3>
+      <p>Your settings are stored locally in your browser and never leave your device. Email content is read only while the relevant Gmail tab is open and is not persisted anywhere by the extension.</p>
+
+      <h3>Permissions</h3>
+      <ul>
+        <li><span class="mono">storage</span> — to remember your preferences (tone, auto-analyze, enabled).</li>
+        <li>Host permission for <span class="mono">https://mail.google.com/*</span> — so the extension can run on Gmail and read the currently open email.</li>
+      </ul>
+
+      <h3>Affiliate links</h3>
+      <p>The "Recommended tools" section on this page may contain affiliate links. We only earn a commission if you choose to sign up through one — this has no effect on how Replyvora itself functions or what it does with your data.</p>
+
+      <h3>Changes to this policy</h3>
+      <p>If this policy changes, the "Last updated" date above will be revised.</p>
+
+      <h3>Contact</h3>
+      <p>Questions about this policy or the extension: <span id="contact-email">[YOUR CONTACT EMAIL]</span></p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fbrand">© <span id="year"></span> Replyvora</div>
+    <div class="flinks">
+      <a href="#privacy">Privacy policy</a>
+      <a href="#" id="cws-link-footer">Chrome Web Store</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Typewriter reveal for the hero draft — runs once, respects reduced motion
+  const draftText = "Hi Jordan, thanks for the heads up — let me check with the team today and confirm by tomorrow morning.";
+  const el = document.getElementById('typewriter');
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (prefersReduced) {
+    el.textContent = draftText;
+  } else {
+    let i = 0;
+    function type() {
+      if (i <= draftText.length) {
+        el.innerHTML = draftText.slice(0, i) + '<span class="cursor"></span>';
+        i++;
+        setTimeout(type, 22);
+      }
+    }
+    type();
+  }
+</script>
+
+</body>
+</html>
